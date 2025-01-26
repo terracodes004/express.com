@@ -93,7 +93,7 @@
                 <h1 class="h3" id="branding">Tank Battle - Online</h1>
                 <nav>
                     <ul class="nav">
-                        <li class="nav-item"><a class="nav-link text-white" href="#menu" id="menuLink">Menu</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="index.html">Menu</a></li>
                     </ul>
                 </nav>
             </div>
@@ -179,10 +179,9 @@
             }
         }
 
-        const socket = io('https://your-websocket-server-url');
+        const socket = io('https://jexample.vercel.app');
         const tanks = {};
         let myTank;
-        let onlineMode = true;
 
         function updateScoreDisplay() {
             // Implement score display logic
