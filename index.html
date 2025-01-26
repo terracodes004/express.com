@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tank Battle</title>
+    <title>Tank Battle - Online</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
@@ -90,11 +90,10 @@
     <header class="bg-dark text-white py-3">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
-                <h1 class="h3" id="branding">Tank Battle</h1>
+                <h1 class="h3" id="branding">Tank Battle - Online</h1>
                 <nav>
                     <ul class="nav">
                         <li class="nav-item"><a class="nav-link text-white" href="#menu" id="menuLink">Menu</a></li>
-                        <li class="nav-item"><a class="nav-link text-white" href="#scores" id="scoresLink">Scores</a></li>
                     </ul>
                 </nav>
             </div>
@@ -102,18 +101,7 @@
     </header>
 
     <div class="container">
-        <div id="menu" class="menu active">
-            <div class="text-center">
-                <button id="startOffline" class="btn btn-primary">Start Offline Game</button>
-                <button id="startOnline" class="btn btn-primary">Start Online Game</button>
-            </div>
-        </div>
-        <div id="scores" class="menu">
-            <h2>Scores and Ranks</h2>
-            <div id="scoreList"></div>
-            <button id="backToMenu" class="btn btn-primary">Back to Menu</button>
-        </div>
-        <div id="game" class="menu">
+        <div id="game" class="menu active">
             <canvas id="gameCanvas" width="800" height="600"></canvas>
             <div class="text-center">
                 <button id="endGame" class="btn btn-primary">End Game</button>
@@ -191,30 +179,18 @@
             }
         }
 
-        const socket = io('https://https://jexample.vercel.app');
+        const socket = io('https://your-websocket-server-url');
         const tanks = {};
         let myTank;
-        let computerTank;
-        let onlineMode = false;
-
-        function showMenu(menuId) {
-            document.querySelectorAll('.menu').forEach(menu => menu.classList.remove('active'));
-            document.getElementById(menuId).classList.add('active');
-        }
+        let onlineMode = true;
 
         function updateScoreDisplay() {
-            let scoreList = document.getElementById('scoreList');
-            scoreList.innerHTML = '';
-            for (let id in tanks) {
-                let tank = tanks[id];
-                scoreList.innerHTML += `<p>${tank.id}: ${tank.score} points</p>`;
-            }
+            // Implement score display logic
         }
 
         socket.on('connect', () => {
             myTank = new Tank(socket.id, 400, 300, "blue");
             tanks[socket.id] = myTank;
-            onlineMode = true;
         });
 
         socket.on('tankMove', (data) => {
@@ -251,50 +227,14 @@
         function update() {
             display.clear();
             display.update();
-            if (!onlineMode && computerTank) {
-                computerTankAI();
-            }
         }
 
         display.update = update;
 
-        document.getElementById('startGame').addEventListener('click', () => {
-            if (navigator.onLine) {
-                socket.connect();
-            } else {
-                myTank = new Tank('player', 400, 300, "blue");
-                computerTank = new Tank('computer', 400, 100, "red");
-                tanks['player'] = myTank;
-                tanks['computer'] = computerTank;
-                onlineMode = false;
-            }
-            showMenu('game');
-        });
-
         document.getElementById('endGame').addEventListener('click', () => {
             socket.disconnect();
-            showMenu('menu');
+            window.location.href = 'index.html';
         });
-
-        document.getElementById('backToMenu').addEventListener('click', () => {
-            showMenu('menu');
-        });
-
-        function computerTankAI() {
-            const random = Math.random();
-            if (random < 0.25) {
-                computerTank.moveForward();
-            } else if (random < 0.5) {
-                computerTank.moveBackward();
-            } else if (random < 0.75) {
-                computerTank.turnLeft();
-            } else {
-                computerTank.turnRight();
-            }
-            if (Math.random() < 0.1) {
-                computerTank.shoot();
-            }
-        }
     </script>
 </body>
 
