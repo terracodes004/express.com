@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Battle - Online</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        header {
+            background: linear-gradient(90deg, #007bff, #00c6ff);
+            color: #fff;
+            padding: 20px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header a {
+            color: #fff;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+
+        header ul {
+            padding: 0;
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        header li {
+            padding: 0 20px;
+        }
+
+        header #branding h1 {
+            margin: 0;
+            font-weight: 300;
+            text-align: center;
+        }
+
+        header nav {
+            margin-top: 10px;
+        }
+
+        #gameCanvas {
+            border: 2px solid #007bff;
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .menu {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="bg-dark text-white py-3">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3" id="branding">Tank Battle - Online</h1>
+                <nav>
+                    <ul class="nav">
+                        <li class="nav-item"><a class="nav-link text-white" href="#menu" id="menuLink">Menu</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="game" class="menu active">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div class="text-center">
+                <button id="endGame" class="btn btn-primary">End Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include JGame.js -->
+    <script src="https://jgame-doc.vercel.app/jgame.js"></script>
+    <script src="https://jgame-doc.vercel.app/jgame_more.js"></script>
+    <!-- Include Socket.io -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <!-- Game Script -->
+    <script>
+        const display = new Display();
+        display.start(800, 600);
+        display.borderStyle("solid");
+        display.borderColor("black");
+
+        class Tank {
+            constructor(id, x, y, color) {
+                this.id = id;
+                this.component = new Component(50, 50, color, x, y, "rectangle");
+                this.angle = 0;
+                display.add(this.component);
+                this.score = 0;
+            }
+
+            moveForward() {
+                this.component.x += Math.cos(this.angle) * 5;
+                this.component.y += Math.sin(this.angle) * 5;
+                this.updateServer();
+            }
+
+            moveBackward() {
+                this.component.x -= Math.cos(this.angle) * 5;
+                this.component.y -= Math.sin(this.angle) * 5;
+                this.updateServer();
+            }
+
+            turnLeft() {
+                this.angle -= 0.1;
+                this.component.angle = this.angle * (180 / Math.PI);
+                this.updateServer();
+            }
+
+            turnRight() {
+                this.angle += 0.1;
+                this.component.angle = this.angle * (180 / Math.PI);
+                this.updateServer();
+            }
+
+            shoot() {
+                const bullet = new Component(10, 10, "red", this.component.x, this.component.y, "rectangle");
+                bullet.angle = this.angle * (180 / Math.PI);
+                display.add(bullet);
+                move.glideTo(bullet, 1, bullet.x + Math.cos(this.angle) * 500, bullet.y + Math.sin(this.angle) * 500);
+                this.updateServer();
+            }
+
+            updateServer() {
+                if (socket.connected) {
+                    socket.emit('tankMove', {
+                        id: this.id,
+                        x: this.component.x,
+                        y: this.component.y,
+                        angle: this.angle
+                    });
+                }
+            }
+
+            updateScore(points) {
+                this.score += points;
+                updateScoreDisplay();
+            }
+        }
+
+        const socket = io('https://your-websocket-server-url');
+        const tanks = {};
+        let myTank;
+        let onlineMode = true;
+
+        function updateScoreDisplay() {
+            // Implement score display logic
+        }
+
+        socket.on('connect', () => {
+            myTank = new Tank(socket.id, 400, 300, "blue");
+            tanks[socket.id] = myTank;
+        });
+
+        socket.on('tankMove', (data) => {
+            if (!tanks[data.id]) {
+                tanks[data.id] = new Tank(data.id, data.x, data.y, "green");
+            } else {
+                tanks[data.id].component.x = data.x;
+                tanks[data.id].component.y = data.y;
+                tanks[data.id].angle = data.angle;
+                tanks[data.id].component.angle = data.angle * (180 / Math.PI);
+            }
+        });
+
+        document.addEventListener("keydown", (e) => {
+            switch (e.code) {
+                case "ArrowUp":
+                    myTank.moveForward();
+                    break;
+                case "ArrowDown":
+                    myTank.moveBackward();
+                    break;
+                case "ArrowLeft":
+                    myTank.turnLeft();
+                    break;
+                case "ArrowRight":
+                    myTank.turnRight();
+                    break;
+                case "Space":
+                    myTank.shoot();
+                    break;
+            }
+        });
+
+        function update() {
+            display.clear();
+            display.update();
+        }
+
+        display.update = update;
+
+        document.getElementById('endGame').addEventListener('click', () => {
+            socket.disconnect();
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+
+</html>
