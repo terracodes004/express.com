@@ -57,6 +57,8 @@
             border: 2px solid #007bff;
             display: block;
             margin: 20px auto;
+            max-width: 100%;
+            height: auto;
         }
 
         .btn-primary {
@@ -96,8 +98,8 @@
     </div>
 
     <!-- Include JGame.js -->
-    <script src="jgame-doc.vercel.app/jgame.js"></script>
-    <script src="jgame-doc.vercel.app/jgame_more.js"></script>
+    <script src="https://jgame-doc.vercel.app/jgame.js"></script>
+    <script src="https://jgame-doc.vercel.app/jgame_more.js"></script>
     <!-- Include Socket.io -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <!-- Game Script -->
@@ -147,18 +149,21 @@
             }
 
             updateServer() {
-                socket.emit('tankMove', {
-                    id: this.id,
-                    x: this.component.x,
-                    y: this.component.y,
-                    angle: this.angle
-                });
+                if (socket.connected) {
+                    socket.emit('tankMove', {
+                        id: this.id,
+                        x: this.component.x,
+                        y: this.component.y,
+                        angle: this.angle
+                    });
+                }
             }
         }
 
-        const socket = io(document.url);
+        const socket = io('https://your-websocket-server-url');
         const tanks = {};
         let myTank;
+        let computerTank;
 
         socket.on('connect', () => {
             myTank = new Tank(socket.id, 400, 300, "blue");
@@ -199,13 +204,39 @@
         function update() {
             display.clear();
             display.update();
+            if (!socket.connected && computerTank) {
+                computerTankAI();
+            }
         }
 
         display.update = update;
 
         document.getElementById('startGame').addEventListener('click', () => {
-            socket.connect();
+            if (navigator.onLine) {
+                socket.connect();
+            } else {
+                myTank = new Tank('player', 400, 300, "blue");
+                computerTank = new Tank('computer', 400, 100, "red");
+                tanks['player'] = myTank;
+                tanks['computer'] = computerTank;
+            }
         });
+
+        function computerTankAI() {
+            const random = Math.random();
+            if (random < 0.25) {
+                computerTank.moveForward();
+            } else if (random < 0.5) {
+                computerTank.moveBackward();
+            } else if (random < 0.75) {
+                computerTank.turnLeft();
+            } else {
+                computerTank.turnRight();
+            }
+            if (Math.random() < 0.1) {
+                computerTank.shoot();
+            }
+        }
     </script>
 </body>
 </html>
