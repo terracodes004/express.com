@@ -67,14 +67,6 @@
         .btn-primary:hover {
             background-color: #0056b3;
         }
-
-        .menu {
-            display: none;
-        }
-
-        .active {
-            display: block;
-        }
     </style>
 </head>
 
@@ -85,181 +77,25 @@
                 <h1 class="h3" id="branding">Tank Battle</h1>
                 <nav>
                     <ul class="nav">
-                        <li class="nav-item"><a class="nav-link text-white" href="#menu" id="menuLink">Menu</a></li>
-                        <li class="nav-item"><a class="nav-link text-white" href="#scores" id="scoresLink">Scores</a></li>
+                        <li class="nav-item"><a class="nav-link text-white" href="index.html">Menu</a></li>
                     </ul>
                 </nav>
             </div>
         </div>
     </header>
 
-    <div class="container">
-        <div id="menu" class="menu active">
-            <div class="text-center">
-                <button id="startOffline" class="btn btn-primary">Start Offline Game</button>
-                <button id="startOnline" class="btn btn-primary">Start Online Game</button>
-            </div>
-        </div>
-        <div id="scores" class="menu">
-            <h2>Scores and Ranks</h2>
-            <div id="scoreList"></div>
-            <button id="backToMenu" class="btn btn-primary">Back to Menu</button>
-        </div>
-        <div id="game" class="menu">
-            <canvas id="gameCanvas" width="800" height="600"></canvas>
-            <div class="text-center">
-                <button id="endGame" class="btn btn-primary">End Game</button>
-            </div>
-        </div>
+    <div class="container text-center">
+        <button id="startOffline" class="btn btn-primary">Start Offline Game</button>
+        <button id="startOnline" class="btn btn-primary">Start Online Game</button>
     </div>
 
-    <!-- Include JGame.js -->
-    <script src="https://jgame-doc.vercel.app/jgame.js"></script>
-    <script src="https://jgame-doc.vercel.app/jgame_more.js"></script>
-    <!-- Include Socket.io -->
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <!-- Game Script -->
     <script>
-        display.start(800, 600);
-        display.borderStyle("solid");
-        display.borderColor("black");
-
-        class Tank {
-            constructor(id, x, y, color) {
-                this.id = id;
-                this.component = new Component(50, 50, color, x, y, "rectangle");
-                this.angle = 0;
-                display.add(this.component);
-                this.score = 0;
-            }
-
-            moveForward() {
-                this.component.x += Math.cos(this.angle) * 5;
-                this.component.y += Math.sin(this.angle) * 5;
-                this.updateServer();
-            }
-
-            moveBackward() {
-                this.component.x -= Math.cos(this.angle) * 5;
-                this.component.y -= Math.sin(this.angle) * 5;
-                this.updateServer();
-            }
-
-            turnLeft() {
-                this.angle -= 0.1;
-                this.component.angle = this.angle * (180 / Math.PI);
-                this.updateServer();
-            }
-
-            turnRight() {
-                this.angle += 0.1;
-                this.component.angle = this.angle * (180 / Math.PI);
-                this.updateServer();
-            }
-
-            shoot() {
-                const bullet = new Component(10, 10, "red", this.component.x, this.component.y, "rectangle");
-                bullet.angle = this.angle * (180 / Math.PI);
-                display.add(bullet);
-                move.glideTo(bullet, 1, bullet.x + Math.cos(this.angle) * 500, bullet.y + Math.sin(this.angle) * 500);
-                this.updateServer();
-            }
-
-            updateServer() {
-                if (socket.connected) {
-                    socket.emit('tankMove', {
-                        id: this.id,
-                        x: this.component.x,
-                        y: this.component.y,
-                        angle: this.angle
-                    });
-                }
-            }
-
-            updateScore(points) {
-                this.score += points;
-                updateScoreDisplay();
-            }
-        }
-
-        const socket = io('https://jexample.vercel.app');
-        const tanks = {};
-        let myTank;
-        let onlineMode = false;
-
-        function showMenu(menuId) {
-            document.querySelectorAll('.menu').forEach(menu => menu.classList.remove('active'));
-            document.getElementById(menuId).classList.add('active');
-        }
-
-        function updateScoreDisplay() {
-            let scoreList = document.getElementById('scoreList');
-            scoreList.innerHTML = '';
-            for (let id in tanks) {
-                let tank = tanks[id];
-                scoreList.innerHTML += `<p>${tank.id}: ${tank.score} points</p>`;
-            }
-        }
-
-        socket.on('connect', () => {
-            myTank = new Tank(socket.id, 400, 300, "blue");
-            tanks[socket.id] = myTank;
-            onlineMode = true;
-        });
-
-        socket.on('tankMove', (data) => {
-            if (!tanks[data.id]) {
-                tanks[data.id] = new Tank(data.id, data.x, data.y, "green");
-            } else {
-                tanks[data.id].component.x = data.x;
-                tanks[data.id].component.y = data.y;
-                tanks[data.id].angle = data.angle;
-                tanks[data.id].component.angle = data.angle * (180 / Math.PI);
-            }
-        });
-
-        document.addEventListener("keydown", (e) => {
-            switch (e.code) {
-                case "ArrowUp":
-                    myTank.moveForward();
-                    break;
-                case "ArrowDown":
-                    myTank.moveBackward();
-                    break;
-                case "ArrowLeft":
-                    myTank.turnLeft();
-                    break;
-                case "ArrowRight":
-                    myTank.turnRight();
-                    break;
-                case "Space":
-                    myTank.shoot();
-                    break;
-            }
-        });
-
-        function update() {
-            display.clear();
-            display.update();
-        }
-
-        display.update = update;
-
         document.getElementById('startOffline').addEventListener('click', () => {
             window.location.href = 'offline.html';
         });
 
         document.getElementById('startOnline').addEventListener('click', () => {
             window.location.href = 'online.html';
-        });
-
-        document.getElementById('endGame').addEventListener('click', () => {
-            socket.disconnect();
-            window.location.href = 'index.html';
-        });
-
-        document.getElementById('backToMenu').addEventListener('click', () => {
-            showMenu('menu');
         });
     </script>
 </body>
