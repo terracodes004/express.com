@@ -96,8 +96,8 @@
     </div>
 
     <!-- Include JGame.js -->
-    <script src="/jgme/jgame.js"></script>
-    <script src="/jgme/jgame_more.js"></script>
+    <script src="jgame-doc.vercel.app/jgame.js"></script>
+    <script src="jgame-doc.vercel.app/jgame_more.js"></script>
     <!-- Include Socket.io -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <!-- Game Script -->
@@ -156,7 +156,7 @@
             }
         }
 
-        const socket = io('https://your-websocket-server-url');
+        const socket = io(document.url);
         const tanks = {};
         let myTank;
 
